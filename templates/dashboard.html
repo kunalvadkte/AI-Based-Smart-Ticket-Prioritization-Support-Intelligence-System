@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+{% block title %}Analytics Dashboard – TicketAI{% endblock %}
+{% block meta_desc %}Real-time analytics dashboard showing ticket priority distribution, issue trends, and confidence metrics.{% endblock %}
+
+{% block content %}
+<section class="dashboard-section py-5">
+  <div class="container-fluid px-4 px-md-5">
+
+    <!-- Page Header -->
+    <div class="page-header mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <h1 class="page-title mb-1">
+          <i class="bi bi-bar-chart-fill text-primary me-2"></i>Analytics Dashboard
+        </h1>
+        <p class="text-muted mb-0">Real-time ticket analytics updated automatically.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-light btn-sm" onclick="refreshStats()">
+          <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+        </button>
+        <button class="btn btn-outline-danger btn-sm" onclick="clearHistory()">
+          <i class="bi bi-trash3-fill me-1"></i>Clear History
+        </button>
+        <a href="{{ url_for('predict') }}" class="btn btn-primary btn-sm px-3">
+          <i class="bi bi-plus-lg me-1"></i>New Ticket
+        </a>
+      </div>
+    </div>
+
+    <!-- ── KPI CARDS ── -->
+    <div class="row g-3 mb-5" id="kpiRow">
+      <div class="col-6 col-md-3">
+        <div class="kpi-card glass-card p-4">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="kpi-icon-wrap bg-primary bg-opacity-10">
+              <i class="bi bi-ticket-detailed-fill text-primary"></i>
+            </div>
+            <span class="kpi-trend text-success small"><i class="bi bi-arrow-up-short"></i>Live</span>
+          </div>
+          <div class="kpi-value" id="kpi-total">{{ stats.total }}</div>
+          <div class="kpi-label">Total Tickets</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-card glass-card p-4">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="kpi-icon-wrap bg-danger bg-opacity-10">
+              <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+            </div>
+            <span class="kpi-trend text-danger small">Urgent</span>
+          </div>
+          <div class="kpi-value text-danger" id="kpi-high">{{ stats.high }}</div>
+          <div class="kpi-label">High Priority</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-card glass-card p-4">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="kpi-icon-wrap bg-warning bg-opacity-10">
+              <i class="bi bi-exclamation-circle-fill text-warning"></i>
+            </div>
+            <span class="kpi-trend text-warning small">Standard</span>
+          </div>
+          <div class="kpi-value text-warning" id="kpi-medium">{{ stats.medium }}</div>
+          <div class="kpi-label">Medium Priority</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-card glass-card p-4">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="kpi-icon-wrap bg-success bg-opacity-10">
+              <i class="bi bi-check-circle-fill text-success"></i>
+            </div>
+            <span class="kpi-trend text-success small">Routine</span>
+          </div>
+          <div class="kpi-value text-success" id="kpi-low">{{ stats.low }}</div>
+          <div class="kpi-label">Low Priority</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CHARTS ROW 1 ── -->
+    <div class="row g-4 mb-4">
+      <!-- Priority Doughnut -->
+      <div class="col-md-5">
+        <div class="glass-card p-4 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="chart-title mb-0"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Priority Distribution</h5>
+            <span class="badge bg-primary bg-opacity-20 text-primary" id="total-badge">Total: {{ stats.total }}</span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="priorityChart"></canvas>
+          </div>
+          <div class="chart-legend d-flex justify-content-center gap-4 mt-3">
+            <span class="legend-item"><span class="legend-dot" style="background:#ef4444"></span>High</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span>Medium</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#22c55e"></span>Low</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Issue Type Bar -->
+      <div class="col-md-7">
+        <div class="glass-card p-4 h-100">
+          <h5 class="chart-title mb-3"><i class="bi bi-bar-chart-fill text-info me-2"></i>Issue Type Distribution</h5>
+          <div class="chart-wrap">
+            <canvas id="issueChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CHARTS ROW 2 ── -->
+    <div class="row g-4 mb-5">
+      <!-- Trend Line -->
+      <div class="col-md-8">
+        <div class="glass-card p-4 h-100">
+          <h5 class="chart-title mb-3"><i class="bi bi-graph-up-arrow text-warning me-2"></i>Priority Trend (Last 10 Tickets)</h5>
+          <div class="chart-wrap">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer Type Radar / Polar -->
+      <div class="col-md-4">
+        <div class="glass-card p-4 h-100">
+          <h5 class="chart-title mb-3"><i class="bi bi-person-badge-fill text-success me-2"></i>Customer Type</h5>
+          <div class="chart-wrap">
+            <canvas id="customerChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TICKET HISTORY TABLE ── -->
+    <div class="glass-card p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h5 class="chart-title mb-0"><i class="bi bi-table text-primary me-2"></i>Recent Ticket History</h5>
+        <input class="form-control form-control-sm w-auto" type="text" id="historySearch" placeholder="🔍 Filter tickets…" />
+      </div>
+
+      <div class="table-responsive">
+        <table class="table history-table" id="historyTable">
+          <thead>
+            <tr>
+              <th>Ticket ID</th>
+              <th>Timestamp</th>
+              <th>Title</th>
+              <th>Issue Type</th>
+              <th>Customer</th>
+              <th>Priority</th>
+              <th>Confidence</th>
+              <th>SLA</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+            {% if history %}
+              {% for t in history %}
+              <tr>
+                <td><code class="ticket-id">{{ t.ticket_id }}</code></td>
+                <td class="text-muted small">{{ t.timestamp }}</td>
+                <td class="ticket-title-cell">{{ t.title[:40] }}{% if t.title|length > 40 %}…{% endif %}</td>
+                <td>{{ t.issue_type }}</td>
+                <td>
+                  <span class="badge {% if t.customer_type == 'Premium' %}badge-premium{% else %}badge-regular{% endif %}">
+                    {{ t.customer_type }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge priority-{{ t.priority.lower() }}-badge">
+                    {{ t.priority }}
+                  </span>
+                </td>
+                <td>
+                  <div class="conf-bar-wrap">
+                    <div class="conf-bar" style="width: {{ t.confidence }}%;
+                      background: {% if t.priority == 'High' %}#ef4444{% elif t.priority == 'Medium' %}#f59e0b{% else %}#22c55e{% endif %}">
+                    </div>
+                    <span class="conf-val">{{ t.confidence }}%</span>
+                  </div>
+                </td>
+                <td class="text-muted small">{{ t.sla }}</td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="8" class="text-center py-4">
+                  <i class="bi bi-inbox-fill fs-2 text-muted d-block mb-2"></i>
+                  No tickets analyzed yet. <a href="{{ url_for('predict') }}">Submit your first ticket</a>.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ─── DATA FROM FLASK ───────────────────────────────────────────────────────
+const stats = {{ stats | tojson }};
+
+// ─── CHART DEFAULTS ───────────────────────────────────────────────────────
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.font.family = 'Inter, sans-serif';
+const GRID_COLOR = 'rgba(148,163,184,0.1)';
+
+// ─── 1. PRIORITY DOUGHNUT ─────────────────────────────────────────────────
+const priorityCtx = document.getElementById('priorityChart').getContext('2d');
+const priorityChart = new Chart(priorityCtx, {
+  type: 'doughnut',
+  data: {
+    labels: ['High', 'Medium', 'Low'],
+    datasets: [{
+      data: [stats.high, stats.medium, stats.low],
+      backgroundColor: ['#ef4444', '#f59e0b', '#22c55e'],
+      borderColor: ['#991b1b', '#92400e', '#14532d'],
+      borderWidth: 2,
+      hoverOffset: 8,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true,
+    cutout: '70%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.label}: ${ctx.parsed} tickets`
+        }
+      }
+    },
+    animation: { animateScale: true }
+  }
+});
+
+// ─── 2. ISSUE TYPE BAR ────────────────────────────────────────────────────
+const issueLabels = Object.keys(stats.issue_counts || {});
+const issueValues = Object.values(stats.issue_counts || {});
+const issueCtx = document.getElementById('issueChart').getContext('2d');
+const issueChart = new Chart(issueCtx, {
+  type: 'bar',
+  data: {
+    labels: issueLabels.length ? issueLabels : ['No data yet'],
+    datasets: [{
+      label: 'Tickets',
+      data: issueValues.length ? issueValues : [0],
+      backgroundColor: 'rgba(99,102,241,0.7)',
+      borderColor: '#6366f1',
+      borderWidth: 2,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: GRID_COLOR }, ticks: { maxRotation: 30 } },
+      y: { grid: { color: GRID_COLOR }, beginAtZero: true, ticks: { stepSize: 1 } }
+    }
+  }
+});
+
+// ─── 3. TREND LINE ────────────────────────────────────────────────────────
+const trendCtx = document.getElementById('trendChart').getContext('2d');
+const trendChart = new Chart(trendCtx, {
+  type: 'line',
+  data: {
+    labels: stats.trend.labels.length ? stats.trend.labels : ['—'],
+    datasets: [
+      { label: 'High',   data: stats.trend.high,   borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)',  tension: 0.4, fill: true, pointRadius: 4 },
+      { label: 'Medium', data: stats.trend.medium, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', tension: 0.4, fill: true, pointRadius: 4 },
+      { label: 'Low',    data: stats.trend.low,    borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.1)',  tension: 0.4, fill: true, pointRadius: 4 },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true,
+    plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } } },
+    scales: {
+      x: { grid: { color: GRID_COLOR } },
+      y: { grid: { color: GRID_COLOR }, beginAtZero: true, ticks: { stepSize: 1 } }
+    }
+  }
+});
+
+// ─── 4. CUSTOMER DOUGHNUT ─────────────────────────────────────────────────
+const custLabels = Object.keys(stats.channel_counts || {});
+const custValues = Object.values(stats.channel_counts || {});
+const customerCtx = document.getElementById('customerChart').getContext('2d');
+new Chart(customerCtx, {
+  type: 'polarArea',
+  data: {
+    labels: custLabels.length ? custLabels : ['No data'],
+    datasets: [{
+      data: custValues.length ? custValues : [1],
+      backgroundColor: ['rgba(99,102,241,0.7)', 'rgba(14,165,233,0.7)', 'rgba(34,197,94,0.7)'],
+      borderWidth: 1,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true,
+    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } },
+    scales: { r: { grid: { color: GRID_COLOR } } }
+  }
+});
+
+// ─── REFRESH STATS ─────────────────────────────────────────────────────────
+async function refreshStats() {
+  const res  = await fetch('/api/stats');
+  const data = await res.json();
+  document.getElementById('kpi-total').textContent  = data.total;
+  document.getElementById('kpi-high').textContent   = data.high;
+  document.getElementById('kpi-medium').textContent = data.medium;
+  document.getElementById('kpi-low').textContent    = data.low;
+  document.getElementById('total-badge').textContent = `Total: ${data.total}`;
+  // Update doughnut
+  priorityChart.data.datasets[0].data = [data.high, data.medium, data.low];
+  priorityChart.update();
+}
+
+// ─── CLEAR HISTORY ─────────────────────────────────────────────────────────
+async function clearHistory() {
+  if (!confirm('Clear all ticket history?')) return;
+  await fetch('/api/clear', { method: 'POST' });
+  document.getElementById('historyBody').innerHTML =
+    `<tr><td colspan="8" class="text-center py-4">
+      <i class="bi bi-inbox-fill fs-2 text-muted d-block mb-2"></i>
+      No tickets yet. <a href="/predict">Submit your first ticket</a>.
+    </td></tr>`;
+  refreshStats();
+}
+
+// ─── HISTORY SEARCH ────────────────────────────────────────────────────────
+document.getElementById('historySearch').addEventListener('input', function () {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('#historyBody tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+</script>
+{% endblock %}

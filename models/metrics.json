@@ -1,0 +1,30 @@
+{
+  "accuracy": 100.0,
+  "cv_mean": 100.0,
+  "cv_std": 0.0,
+  "classes": [
+    "High",
+    "Low",
+    "Medium"
+  ],
+  "class_report": "              precision    recall  f1-score   support\n\n        High       1.00      1.00      1.00       315\n         Low       1.00      1.00      1.00       258\n      Medium       1.00      1.00      1.00       467\n\n    accuracy                           1.00      1040\n   macro avg       1.00      1.00      1.00      1040\nweighted avg       1.00      1.00      1.00      1040\n",
+  "confusion_matrix": [
+    [
+      315,
+      0,
+      0
+    ],
+    [
+      0,
+      258,
+      0
+    ],
+    [
+      0,
+      0,
+      467
+    ]
+  ],
+  "train_size": 4160,
+  "test_size": 1040
+}

@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Joblib model artefacts (regenerate via train_model.py)
+models/model.joblib
+models/vectorizer.joblib
+models/encoders.joblib
+
+# Keep metrics.json so reviewers can see training results
+!models/metrics.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Flask session
+flask_session/
+*.log
+
+# Jupyter
+.ipynb_checkpoints/

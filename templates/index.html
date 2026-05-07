@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}TicketAI – AI-Powered Helpdesk Intelligence{% endblock %}
+{% block meta_desc %}Smart ticket prioritization using Machine Learning and NLP. Instantly classify support tickets as High, Medium, or Low priority.{% endblock %}
+
+{% block content %}
+
+<!-- ════════ HERO SECTION ════════ -->
+<section class="hero-section">
+  <div class="hero-particles" id="particles"></div>
+  <div class="container-fluid px-4 px-md-5">
+    <div class="row align-items-center min-vh-90 g-5">
+      <div class="col-lg-6" data-aos="fade-right">
+        <div class="hero-badge mb-3">
+          <span class="badge-dot"></span>
+          <span>AI-Powered &bull; Final Year ML Project &bull; 2024</span>
+        </div>
+        <h1 class="hero-title">
+          Smart Ticket
+          <span class="gradient-text">Prioritization</span>
+          &amp; Support Intelligence
+        </h1>
+        <p class="hero-subtitle">
+          Enterprise-grade ML system that instantly classifies helpdesk tickets into
+          <strong>High, Medium, or Low</strong> priority using Random Forest + TF-IDF NLP.
+          Includes SLA recommendations, sentiment analysis, and real-time analytics.
+        </p>
+        <div class="d-flex flex-wrap gap-3 mt-4">
+          <a href="{{ url_for('predict') }}" class="btn btn-primary btn-lg hero-cta">
+            <i class="bi bi-lightning-fill me-2"></i>Analyze Ticket
+            <span class="btn-shine"></span>
+          </a>
+          <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light btn-lg">
+            <i class="bi bi-bar-chart-fill me-2"></i>View Dashboard
+          </a>
+        </div>
+        <!-- Trust badges -->
+        <div class="d-flex flex-wrap gap-3 mt-4 hero-badges">
+          <span><i class="bi bi-shield-check-fill text-success me-1"></i>ML Powered</span>
+          <span><i class="bi bi-cpu-fill text-primary me-1"></i>NLP Analysis</span>
+          <span><i class="bi bi-graph-up-arrow text-warning me-1"></i>Real-time Analytics</span>
+          <span><i class="bi bi-lock-fill text-info me-1"></i>SLA Tracking</span>
+        </div>
+      </div>
+      <div class="col-lg-6 d-flex justify-content-center" data-aos="fade-left">
+        <div class="hero-card-demo glass-card p-4">
+          <div class="demo-header mb-3">
+            <div class="d-flex align-items-center gap-2">
+              <div class="demo-dot red"></div><div class="demo-dot yellow"></div><div class="demo-dot green"></div>
+              <span class="ms-2 text-muted small">ticket_analysis.py</span>
+            </div>
+          </div>
+          <pre class="demo-code"><span class="kw">from</span> ticketai <span class="kw">import</span> predict_priority
+
+ticket = {
+  <span class="str">"title"</span>: <span class="str">"Server Down – Production"</span>,
+  <span class="str">"issue_type"</span>: <span class="str">"Server Down"</span>,
+  <span class="str">"customer_type"</span>: <span class="str">"Premium"</span>,
+  <span class="str">"impact_level"</span>: <span class="str">"High"</span>,
+}
+
+result = predict_priority(ticket)
+<span class="comment"># → Priority: HIGH  (94.2% confidence)</span>
+<span class="comment"># → SLA: Resolve within 1 hour</span>
+<span class="comment"># → Sentiment: Negative</span></pre>
+          <div class="mt-3 d-flex gap-2">
+            <span class="badge priority-high px-3 py-2 fs-6">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i>HIGH PRIORITY
+            </span>
+            <span class="badge bg-dark px-3 py-2 fs-6">94.2% Confidence</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ STATS BAR ════════ -->
+<section class="stats-bar py-4">
+  <div class="container-fluid px-4">
+    <div class="row g-3 justify-content-center">
+      {% set stat_items = [
+        ('bi-ticket-detailed-fill', stats.total if stats.total else 0, 'Tickets Processed', 'primary'),
+        ('bi-exclamation-triangle-fill', stats.high if stats.high else 0, 'High Priority', 'danger'),
+        ('bi-dash-circle-fill', stats.medium if stats.medium else 0, 'Medium Priority', 'warning'),
+        ('bi-check-circle-fill', stats.low if stats.low else 0, 'Low Priority', 'success'),
+      ] %}
+      {% for icon, val, label, color in stat_items %}
+      <div class="col-6 col-md-3">
+        <div class="stat-card glass-card text-center p-3">
+          <i class="bi {{ icon }} text-{{ color }} fs-3 mb-2"></i>
+          <div class="stat-number" data-target="{{ val }}">{{ val }}</div>
+          <div class="stat-label">{{ label }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ════════ FEATURES SECTION ════════ -->
+<section class="features-section py-6">
+  <div class="container-fluid px-4 px-md-5">
+    <div class="section-header text-center mb-5">
+      <span class="section-badge">CAPABILITIES</span>
+      <h2 class="section-title">Enterprise-Grade Intelligence</h2>
+      <p class="section-subtitle">Powered by state-of-the-art ML pipeline combining NLP, sentiment analysis, and structured data processing.</p>
+    </div>
+
+    <div class="row g-4">
+      {% set features = [
+        ('bi-brain','#6366f1','AI Priority Prediction','Random Forest classifier trained on 5,000+ synthetic support tickets with 95%+ accuracy.'),
+        ('bi-chat-text-fill','#06b6d4','NLP Text Analysis','TF-IDF vectorization with bigrams extracts semantic meaning from ticket titles and descriptions.'),
+        ('bi-emoji-smile-fill','#f59e0b','Sentiment Analysis','VADER-powered sentiment scoring detects frustrated customers needing immediate attention.'),
+        ('bi-shield-exclamation','#ef4444','Urgency Detection','Domain-specific keyword analysis flags critical terms like "breach", "crash", "data loss".'),
+        ('bi-clock-history','#22c55e','SLA Recommendations','Automatic SLA assignment: High → 1h, Medium → 6h, Low → 24h based on priority.'),
+        ('bi-bar-chart-line-fill','#8b5cf6','Real-time Dashboard','Live analytics with Chart.js showing priority distribution, issue trends, and confidence metrics.'),
+        ('bi-person-badge-fill','#0ea5e9','Multi-Input Processing','Processes 8 distinct inputs: text, issue type, customer tier, channel, impact, and history.'),
+        ('bi-cloud-upload-fill','#f97316','Industry Deployable','Built with Flask + Joblib. Ready for deployment on Render, Railway, or AWS.'),
+      ] %}
+      {% for icon, color, title, desc in features %}
+      <div class="col-sm-6 col-lg-3">
+        <div class="feature-card glass-card h-100 p-4 hover-lift">
+          <div class="feature-icon mb-3" style="--icon-color: {{ color }}">
+            <i class="bi {{ icon }}"></i>
+          </div>
+          <h5 class="feature-title">{{ title }}</h5>
+          <p class="feature-desc text-muted small mb-0">{{ desc }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ════════ HOW IT WORKS ════════ -->
+<section class="how-section py-6">
+  <div class="container-fluid px-4 px-md-5">
+    <div class="section-header text-center mb-5">
+      <span class="section-badge">WORKFLOW</span>
+      <h2 class="section-title">How It Works</h2>
+    </div>
+    <div class="row g-4 justify-content-center">
+      {% set steps = [
+        ('1','bi-form','Submit Ticket','Fill in ticket details: title, description, issue type, customer tier, and impact level.'),
+        ('2','bi-gear-wide-connected','ML Processing','TF-IDF extracts text features. Random Forest combines them with structured inputs.'),
+        ('3','bi-graph-up','Priority Predicted','Model outputs High/Medium/Low with probability scores and confidence percentages.'),
+        ('4','bi-send-check-fill','SLA + Explanation','Get actionable SLA targets, sentiment insights, and urgency explanations instantly.'),
+      ] %}
+      {% for num, icon, title, desc in steps %}
+      <div class="col-sm-6 col-lg-3">
+        <div class="step-card text-center p-4 position-relative">
+          <div class="step-number">{{ num }}</div>
+          <div class="step-icon my-3"><i class="bi {{ icon }}"></i></div>
+          <h5>{{ title }}</h5>
+          <p class="text-muted small mb-0">{{ desc }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ════════ CTA BANNER ════════ -->
+<section class="cta-section py-6">
+  <div class="container-fluid px-4 px-md-5">
+    <div class="cta-card glass-card p-5 text-center">
+      <h2 class="cta-title mb-3">Ready to Prioritize Your Tickets?</h2>
+      <p class="text-muted mb-4">Submit a support ticket and let our AI classify it in milliseconds.</p>
+      <a href="{{ url_for('predict') }}" class="btn btn-primary btn-lg px-5">
+        <i class="bi bi-lightning-fill me-2"></i>Analyze Ticket Now
+      </a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Animate stat counters on scroll
+const counters = document.querySelectorAll('.stat-number');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const target = parseInt(entry.target.dataset.target) || 0;
+      let current = 0;
+      const step = Math.ceil(target / 40);
+      const timer = setInterval(() => {
+        current = Math.min(current + step, target);
+        entry.target.textContent = current.toLocaleString();
+        if (current >= target) clearInterval(timer);
+      }, 30);
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.3 });
+counters.forEach(c => observer.observe(c));
+</script>
+{% endblock %}
