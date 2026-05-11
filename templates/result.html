@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+{% block title %}Result – {{ result.priority }} Priority – TicketAI{% endblock %}
+{% block meta_desc %}Ticket classified as {{ result.priority }} priority with {{ result.confidence }}% confidence. SLA: {{ result.sla }}.{% endblock %}
+
+{% block content %}
+<section class="result-section py-5">
+  <div class="container-fluid px-4 px-md-5">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+      <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('predict') }}">Analyze Ticket</a></li>
+        <li class="breadcrumb-item active">Result</li>
+      </ol>
+    </nav>
+
+    <!-- ── HERO RESULT CARD ── -->
+    {% set p = result.priority %}
+    {% if p == 'High' %}
+      {% set p_color = 'danger' %}
+      {% set p_icon  = 'exclamation-triangle-fill' %}
+      {% set p_class = 'priority-high' %}
+    {% elif p == 'Medium' %}
+      {% set p_color = 'warning' %}
+      {% set p_icon  = 'exclamation-circle-fill' %}
+      {% set p_class = 'priority-medium' %}
+    {% else %}
+      {% set p_color = 'success' %}
+      {% set p_icon  = 'check-circle-fill' %}
+      {% set p_class = 'priority-low' %}
+    {% endif %}
+
+    <div class="result-hero glass-card p-5 mb-5 text-center priority-border-{{ p_color }}">
+      <div class="result-badge-wrapper mb-3">
+        <div class="result-pulse {{ p_class }}-pulse"></div>
+        <div class="result-icon-circle {{ p_class }}-bg">
+          <i class="bi bi-{{ p_icon }}"></i>
+        </div>
+      </div>
+      <p class="text-muted small mb-1 text-uppercase letter-spacing-2">Ticket {{ ticket_id }} &bull; Analysis Complete</p>
+      <h1 class="result-priority-title {{ p_class }}-text">{{ p.upper() }} PRIORITY</h1>
+      <p class="fs-5 text-muted mb-4">{{ result.sla }}</p>
+
+      <!-- Confidence ring + bar -->
+      <div class="row g-4 justify-content-center mb-4">
+        <div class="col-auto">
+          <div class="confidence-ring" id="confidenceRing"
+            data-confidence="{{ result.confidence }}"
+            data-color="{% if p == 'High' %}#ef4444{% elif p == 'Medium' %}#f59e0b{% else %}#22c55e{% endif %}">
+            <svg viewBox="0 0 120 120" width="120" height="120">
+              <circle class="ring-bg" cx="60" cy="60" r="50"/>
+              <circle class="ring-fg" cx="60" cy="60" r="50" id="ringFg"
+                stroke="{% if p == 'High' %}#ef4444{% elif p == 'Medium' %}#f59e0b{% else %}#22c55e{% endif %}"/>
+              <text x="60" y="60" class="ring-text" text-anchor="middle" dominant-baseline="central">
+                {{ result.confidence }}%
+              </text>
+              <text x="60" y="78" class="ring-sub" text-anchor="middle">Confidence</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Probability breakdown -->
+      <div class="row g-3 justify-content-center mb-4">
+        {% for cls, prob in result.probabilities.items() %}
+        <div class="col-auto">
+          <div class="prob-pill {% if cls == p %}active{% endif %}">
+            <span class="prob-label">{{ cls }}</span>
+            <span class="prob-val">{{ prob }}%</span>
+            <div class="prob-bar">
+              <div class="prob-fill" style="width: {{ prob }}%;
+                background: {% if cls == 'High' %}#ef4444{% elif cls == 'Medium' %}#f59e0b{% else %}#22c55e{% endif %}">
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="d-flex gap-3 justify-content-center flex-wrap">
+        <a href="{{ url_for('predict') }}" class="btn btn-primary px-4">
+          <i class="bi bi-plus-circle-fill me-2"></i>Analyze Another
+        </a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light px-4">
+          <i class="bi bi-bar-chart-fill me-2"></i>View Dashboard
+        </a>
+        <button class="btn btn-outline-light px-4" onclick="window.print()">
+          <i class="bi bi-printer-fill me-2"></i>Print Report
+        </button>
+      </div>
+    </div>
+
+    <!-- ── DETAIL CARDS ROW ── -->
+    <div class="row g-4 mb-5">
+
+      <!-- Explanation -->
+      <div class="col-md-6">
+        <div class="glass-card h-100 p-4">
+          <h5 class="card-section-title mb-3">
+            <i class="bi bi-chat-quote-fill text-primary me-2"></i>Urgency Explanation
+          </h5>
+          <p class="explanation-text">{{ result.explanation }}</p>
+          <hr class="divider">
+          <h6 class="mb-3 text-muted small text-uppercase">Urgency Keywords Detected</h6>
+          <div class="d-flex flex-wrap gap-2">
+            {% if result.urgency.critical_matches %}
+              {% for kw in result.urgency.critical_matches %}
+                <span class="badge kw-badge-critical">🔴 {{ kw }}</span>
+              {% endfor %}
+            {% endif %}
+            {% if result.urgency.medium_matches %}
+              {% for kw in result.urgency.medium_matches %}
+                <span class="badge kw-badge-medium">🟡 {{ kw }}</span>
+              {% endfor %}
+            {% endif %}
+            {% if not result.urgency.critical_matches and not result.urgency.medium_matches %}
+              <span class="text-muted small">No critical keywords found.</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Sentiment -->
+      <div class="col-md-6">
+        <div class="glass-card h-100 p-4">
+          <h5 class="card-section-title mb-3">
+            <i class="bi bi-emoji-smile-fill text-warning me-2"></i>Sentiment Analysis
+          </h5>
+          {% set s = result.sentiment %}
+          {% if s.label == 'Negative' %}
+            {% set s_color = '#ef4444' %} {% set s_icon = 'emoji-frown-fill' %}
+          {% elif s.label == 'Positive' %}
+            {% set s_color = '#22c55e' %} {% set s_icon = 'emoji-smile-fill' %}
+          {% else %}
+            {% set s_color = '#f59e0b' %} {% set s_icon = 'emoji-neutral-fill' %}
+          {% endif %}
+          <div class="sentiment-display text-center py-3">
+            <i class="bi bi-{{ s_icon }} sentiment-icon" style="color: {{ s_color }}"></i>
+            <div class="sentiment-label mt-2" style="color: {{ s_color }}">{{ s.label }}</div>
+            <div class="text-muted small">Compound Score: {{ s.compound }}</div>
+          </div>
+          <div class="sentiment-bars mt-3">
+            {% for label, val, color in [('Positive', s.pos, '#22c55e'), ('Neutral', s.neu, '#f59e0b'), ('Negative', s.neg, '#ef4444')] %}
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <span class="small text-muted" style="width:65px">{{ label }}</span>
+              <div class="flex-grow-1 progress-track">
+                <div class="progress-fill" style="width: {{ (val * 100)|round(1) }}%; background: {{ color }};"></div>
+              </div>
+              <span class="small fw-semibold" style="width:40px; text-align:right">{{ (val * 100)|round(1) }}%</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- SLA Timeline -->
+      <div class="col-md-6">
+        <div class="glass-card h-100 p-4">
+          <h5 class="card-section-title mb-3">
+            <i class="bi bi-clock-fill text-info me-2"></i>SLA Timeline
+          </h5>
+          <div class="sla-timeline">
+            {% set slas = [('High', '1 hour', '#ef4444'), ('Medium', '6 hours', '#f59e0b'), ('Low', '24 hours', '#22c55e')] %}
+            {% for lvl, time, color in slas %}
+            <div class="sla-row {% if lvl == p %}active{% endif %}">
+              <div class="sla-dot" style="background: {{ color }}"></div>
+              <div class="sla-info">
+                <span class="sla-level" style="color: {{ color }}">{{ lvl }} Priority</span>
+                <span class="sla-time">→ Resolve within {{ time }}</span>
+              </div>
+              {% if lvl == p %}
+              <span class="badge" style="background: {{ color }}"><i class="bi bi-check-lg"></i> Your SLA</span>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Summary -->
+      <div class="col-md-6">
+        <div class="glass-card h-100 p-4">
+          <h5 class="card-section-title mb-3">
+            <i class="bi bi-list-check text-success me-2"></i>Input Summary
+          </h5>
+          <table class="table table-sm input-summary-table">
+            <tbody>
+              {% set fields = [
+                ('Issue Type', form_data.issue_type),
+                ('Customer Type', form_data.customer_type),
+                ('Channel', form_data.channel),
+                ('Impact Level', form_data.impact_level),
+                ('Previous Complaints', form_data.previous_complaints),
+                ('Hours Open', form_data.hours_open),
+              ] %}
+              {% for label, val in fields %}
+              <tr>
+                <td class="text-muted small">{{ label }}</td>
+                <td class="fw-semibold">{{ val }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <div class="mt-3">
+            <div class="text-muted small mb-1">Urgency Score (0–3)</div>
+            <div class="urgency-meter">
+              {% for i in range(1, 4) %}
+              <div class="urgency-block {% if i <= result.urgency.urgency_score %}active{% endif %}"></div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recommendation Banner -->
+    <div class="recommendation-banner glass-card p-4 d-flex align-items-center gap-4">
+      <div class="rec-icon-wrap"><i class="bi bi-robot fs-1 text-primary"></i></div>
+      <div class="flex-grow-1">
+        <h5 class="mb-1">AI Recommendation</h5>
+        <p class="mb-0 text-muted">
+          {% if p == 'High' %}
+          Escalate immediately to Level 3 support. Notify the on-call engineer and start the incident management process. Expected resolution: <strong>within 1 hour</strong>.
+          {% elif p == 'Medium' %}
+          Assign to the appropriate support team within the next business hour. Monitor for escalation triggers. Expected resolution: <strong>within 6 hours</strong>.
+          {% else %}
+          Queue for standard processing. Review during the next sprint/support cycle. Expected resolution: <strong>within 24 hours</strong>.
+          {% endif %}
+        </p>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Animate confidence ring on load
+window.addEventListener('DOMContentLoaded', () => {
+  const ring       = document.getElementById('ringFg');
+  const confidence = parseFloat(document.getElementById('confidenceRing').dataset.confidence);
+  const r          = 50;
+  const circ       = 2 * Math.PI * r;
+  ring.style.strokeDasharray  = circ;
+  ring.style.strokeDashoffset = circ;
+  ring.style.strokeLinecap    = 'round';
+  ring.style.strokeWidth      = '8';
+  ring.style.fill             = 'none';
+  ring.style.transition       = 'stroke-dashoffset 1.2s ease';
+  setTimeout(() => {
+    ring.style.strokeDashoffset = circ * (1 - confidence / 100);
+  }, 200);
+
+  // Animate prob bars
+  document.querySelectorAll('.prob-fill').forEach(el => {
+    const w = el.style.width;
+    el.style.width = '0%';
+    setTimeout(() => { el.style.transition = 'width 0.8s ease'; el.style.width = w; }, 300);
+  });
+
+  // Animate progress bars
+  document.querySelectorAll('.progress-fill').forEach(el => {
+    const w = el.style.width;
+    el.style.width = '0%';
+    setTimeout(() => { el.style.transition = 'width 0.8s ease'; el.style.width = w; }, 400);
+  });
+});
+</script>
+{% endblock %}

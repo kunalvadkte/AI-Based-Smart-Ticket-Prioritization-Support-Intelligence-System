@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% block title %}Analyze Ticket – TicketAI{% endblock %}
+{% block meta_desc %}Submit your support ticket for instant AI-powered priority classification with SLA recommendations.{% endblock %}
+
+{% block content %}
+<section class="predict-section py-5">
+  <div class="container-fluid px-4 px-md-5">
+
+    <!-- Page Header -->
+    <div class="page-header mb-5">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small">
+          <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+          <li class="breadcrumb-item active">Analyze Ticket</li>
+        </ol>
+      </nav>
+      <h1 class="page-title">
+        <i class="bi bi-send-fill text-primary me-2"></i>Ticket Analysis Form
+      </h1>
+      <p class="text-muted">Fill in the details below. Our AI will predict the priority, SLA, and provide an urgency explanation.</p>
+    </div>
+
+    {% if not models_ready %}
+    <div class="alert alert-warning d-flex align-items-start gap-3 mb-4">
+      <i class="bi bi-exclamation-triangle-fill fs-4 mt-1"></i>
+      <div>
+        <strong>Model Not Trained</strong><br>
+        Run <code>python train_model.py</code> first to generate the ML models before submitting tickets.
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+      <!-- ── FORM COLUMN ── -->
+      <div class="col-lg-8">
+        <form id="ticketForm" method="POST" action="{{ url_for('predict') }}" novalidate>
+
+          <!-- Block 1: Ticket Details -->
+          <div class="form-block glass-card p-4 mb-4">
+            <div class="form-block-header mb-4">
+              <span class="form-block-num">01</span>
+              <div>
+                <h5 class="mb-0">Ticket Information</h5>
+                <p class="text-muted small mb-0">Describe the issue in detail for better ML accuracy.</p>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="title" class="form-label fw-semibold">
+                Ticket Title <span class="text-danger">*</span>
+              </label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-tag-fill"></i></span>
+                <input type="text" class="form-control" id="title" name="title"
+                  placeholder="e.g. Server completely down – production halted"
+                  maxlength="200" required />
+                <div class="invalid-feedback">Please provide a ticket title.</div>
+              </div>
+              <div class="form-text">Clear, concise title helps the NLP model significantly.</div>
+            </div>
+
+            <div class="mb-3">
+              <label for="description" class="form-label fw-semibold">
+                Ticket Description <span class="text-danger">*</span>
+              </label>
+              <div class="input-group align-items-start">
+                <span class="input-group-text pt-2"><i class="bi bi-card-text"></i></span>
+                <textarea class="form-control" id="description" name="description"
+                  rows="5" maxlength="2000"
+                  placeholder="Describe the problem in detail. Include symptoms, when it started, affected users, etc."
+                  required></textarea>
+                <div class="invalid-feedback">Please describe the issue.</div>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span class="form-text">More detail → higher prediction accuracy.</span>
+                <span class="form-text char-count" id="descCount">0 / 2000</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Block 2: Classification -->
+          <div class="form-block glass-card p-4 mb-4">
+            <div class="form-block-header mb-4">
+              <span class="form-block-num">02</span>
+              <div>
+                <h5 class="mb-0">Issue Classification</h5>
+                <p class="text-muted small mb-0">Categorical features used by the Random Forest model.</p>
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label for="issue_type" class="form-label fw-semibold">Issue Type</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-list-ul"></i></span>
+                  <select class="form-select" id="issue_type" name="issue_type">
+                    <option value="Payment Issue">💳 Payment Issue</option>
+                    <option value="Login Issue">🔐 Login Issue</option>
+                    <option value="Technical Bug" selected>🐛 Technical Bug</option>
+                    <option value="Feature Request">✨ Feature Request</option>
+                    <option value="Security Problem">🛡️ Security Problem</option>
+                    <option value="Account Suspension">🚫 Account Suspension</option>
+                    <option value="Server Down">🖥️ Server Down</option>
+                    <option value="Other">❓ Other</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <label for="customer_type" class="form-label fw-semibold">Customer Type</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-person-badge-fill"></i></span>
+                  <select class="form-select" id="customer_type" name="customer_type">
+                    <option value="Premium">⭐ Premium</option>
+                    <option value="Regular" selected>👤 Regular</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <label for="channel" class="form-label fw-semibold">Communication Channel</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-headset"></i></span>
+                  <select class="form-select" id="channel" name="channel">
+                    <option value="Email">📧 Email</option>
+                    <option value="Chat" selected>💬 Chat</option>
+                    <option value="Phone Call">📞 Phone Call</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-sm-6">
+                <label for="impact_level" class="form-label fw-semibold">System Impact Level</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-lightning-fill"></i></span>
+                  <select class="form-select" id="impact_level" name="impact_level">
+                    <option value="Low">🟢 Low</option>
+                    <option value="Medium" selected>🟡 Medium</option>
+                    <option value="High">🔴 High</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Block 3: Metrics -->
+          <div class="form-block glass-card p-4 mb-4">
+            <div class="form-block-header mb-4">
+              <span class="form-block-num">03</span>
+              <div>
+                <h5 class="mb-0">Ticket Metrics</h5>
+                <p class="text-muted small mb-0">Numerical signals that boost model confidence.</p>
+              </div>
+            </div>
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label for="previous_complaints" class="form-label fw-semibold">
+                  Previous Complaints Count
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-clock-history"></i></span>
+                  <input type="number" class="form-control" id="previous_complaints"
+                    name="previous_complaints" value="0" min="0" max="50" />
+                </div>
+                <div class="form-text">How many tickets this customer has raised before.</div>
+              </div>
+              <div class="col-sm-6">
+                <label for="hours_open" class="form-label fw-semibold">
+                  Hours Since Ticket Raised
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-stopwatch-fill"></i></span>
+                  <input type="number" class="form-control" id="hours_open"
+                    name="hours_open" value="1" min="0" max="720" step="0.5" />
+                </div>
+                <div class="form-text">Time elapsed since the ticket was first opened.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-primary btn-lg px-5 flex-grow-1" id="submitBtn"
+              {% if not models_ready %}disabled{% endif %}>
+              <span class="btn-text"><i class="bi bi-cpu-fill me-2"></i>Analyze with AI</span>
+              <span class="btn-loading d-none">
+                <span class="spinner-border spinner-border-sm me-2"></span>Analyzing…
+              </span>
+            </button>
+            <button type="reset" class="btn btn-outline-secondary btn-lg px-4">
+              <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ── SIDEBAR ── -->
+      <div class="col-lg-4">
+        <!-- ML Info card -->
+        <div class="glass-card p-4 mb-4">
+          <h6 class="fw-bold mb-3"><i class="bi bi-info-circle-fill text-primary me-2"></i>How AI Processes Your Ticket</h6>
+          <div class="pipeline-steps">
+            <div class="pipeline-step">
+              <div class="pipeline-dot"></div>
+              <div><strong>TF-IDF</strong><br><span class="text-muted small">Extracts text features from title + description</span></div>
+            </div>
+            <div class="pipeline-step">
+              <div class="pipeline-dot"></div>
+              <div><strong>Feature Engineering</strong><br><span class="text-muted small">Encodes issue type, customer tier, channel, impact</span></div>
+            </div>
+            <div class="pipeline-step">
+              <div class="pipeline-dot"></div>
+              <div><strong>Random Forest</strong><br><span class="text-muted small">200-tree ensemble predicts priority class</span></div>
+            </div>
+            <div class="pipeline-step">
+              <div class="pipeline-dot"></div>
+              <div><strong>VADER Sentiment</strong><br><span class="text-muted small">Analyses emotional tone of text</span></div>
+            </div>
+            <div class="pipeline-step last">
+              <div class="pipeline-dot success"></div>
+              <div><strong>Result + SLA</strong><br><span class="text-muted small">Priority, confidence %, and SLA returned</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick examples -->
+        <div class="glass-card p-4">
+          <h6 class="fw-bold mb-3"><i class="bi bi-lightbulb-fill text-warning me-2"></i>Quick Examples</h6>
+          <div class="d-flex flex-column gap-2">
+            <button class="btn btn-sm example-btn" data-title="Server completely down – production halted" data-desc="Our production server has gone completely offline. All users are unable to access the system. This is causing massive revenue loss. Immediate intervention required." data-issue="Server Down" data-customer="Premium" data-impact="High" data-complaints="5" data-hours="0.5">
+              <span class="badge priority-high me-1">HIGH</span> Server Outage
+            </button>
+            <button class="btn btn-sm example-btn" data-title="Email notifications not arriving" data-desc="Users are reporting that email notifications for order confirmations are not being received. The issue started about 3 hours ago and affects approximately 20% of users." data-issue="Technical Bug" data-customer="Regular" data-impact="Medium" data-complaints="2" data-hours="3">
+              <span class="badge priority-medium me-1">MED</span> Email Notifications
+            </button>
+            <button class="btn btn-sm example-btn" data-title="Request to add dark mode to dashboard" data-desc="Many of our team members prefer working with dark interfaces. It would be great if you could add a dark mode toggle to the main dashboard settings." data-issue="Feature Request" data-customer="Regular" data-impact="Low" data-complaints="0" data-hours="24">
+              <span class="badge priority-low me-1">LOW</span> Dark Mode Request
+            </button>
+          </div>
+        </div>
+      </div>
+    </div><!-- /row -->
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Character counter ──────────────────────────────────────
+const desc = document.getElementById('description');
+const cnt  = document.getElementById('descCount');
+desc.addEventListener('input', () => {
+  cnt.textContent = `${desc.value.length} / 2000`;
+});
+
+// ── Form validation ───────────────────────────────────────
+const form = document.getElementById('ticketForm');
+const btn  = document.getElementById('submitBtn');
+form.addEventListener('submit', function (e) {
+  if (!form.checkValidity()) {
+    e.preventDefault(); e.stopPropagation();
+    form.classList.add('was-validated');
+    return;
+  }
+  btn.querySelector('.btn-text').classList.add('d-none');
+  btn.querySelector('.btn-loading').classList.remove('d-none');
+  btn.disabled = true;
+});
+
+// ── Quick example filler ──────────────────────────────────
+document.querySelectorAll('.example-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    document.getElementById('title').value               = b.dataset.title;
+    document.getElementById('description').value         = b.dataset.desc;
+    document.getElementById('issue_type').value          = b.dataset.issue;
+    document.getElementById('customer_type').value       = b.dataset.customer;
+    document.getElementById('impact_level').value        = b.dataset.impact;
+    document.getElementById('previous_complaints').value = b.dataset.complaints;
+    document.getElementById('hours_open').value          = b.dataset.hours;
+    cnt.textContent = `${b.dataset.desc.length} / 2000`;
+    document.getElementById('title').scrollIntoView({ behavior: 'smooth' });
+  });
+});
+</script>
+{% endblock %}
