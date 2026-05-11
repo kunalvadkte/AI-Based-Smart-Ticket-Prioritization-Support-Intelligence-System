@@ -17,6 +17,7 @@ An industry-deployable intelligent helpdesk ticket prioritization system that:
 - Predicts ticket priority: **High / Medium / Low**
 - Returns **confidence score**, **SLA recommendation**, and **urgency explanation**
 - Includes **VADER sentiment analysis** and **keyword urgency detection**
+- Features a **Smart Floating Mail Ticket Composer** (Gmail-style) with AI auto-extraction
 - Displays results on a **professional glassmorphism dashboard**
 
 ---
@@ -137,6 +138,8 @@ smart-ticket-prioritization/
 
 ## 🎨 UI Features
 
+- **Smart Floating Mail Composer** (Gmail-like floating modal)
+- **AI Keyword Auto-Extraction** & Typewriter animation effects
 - **Dark glassmorphism** theme with smooth animations
 - **Animated SVG confidence ring** on result page
 - **4 Chart.js charts**: Doughnut, Bar, Line Trend, Polar Area
