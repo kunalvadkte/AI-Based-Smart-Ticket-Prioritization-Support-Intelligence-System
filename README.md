@@ -21,6 +21,17 @@ An industry-deployable intelligent helpdesk ticket prioritization system that:
 
 ---
 
+## 📸 Screenshots
+
+| | |
+|---|---|
+| ![Home Page](screenshots/screenshot_1.png) | ![Predict Form](screenshots/screenshot_2.png) |
+| **Home Page** — Hero section with features & stats | **Predict Page** — Multi-input ticket submission form |
+| ![Result Page](screenshots/screenshot_3.png) | ![Dashboard](screenshots/screenshot_4.png) |
+| **Result Page** — Priority prediction with confidence ring | **Dashboard** — Analytics with Chart.js visualizations |
+
+---
+
 ## 🚀 Quick Start
 
 ### 1. Create Virtual Environment
